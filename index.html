@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Stream</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<!--No AI BTW-->
+
+<body>
+    <h1 class="h1">
+        Micro Punch Dashboard
+    </h1>
+    <div class="main-container">
+        <div class="telemetry">
+            <div class="indicator">
+               <div class="indicator-text">
+                Detected
+               </div>
+            </div>
+            <div class="statistic">
+                <div class="number">
+                    67
+                </div>
+                <p>Islets detected</p>
+            </div>
+            <button class="refresh">Refresh</button>
+            <div class="model-dropdown">
+                <label for="model-select" class="label">Select Model</label>
+                <select name="model-select" class="model-selector" id="model-select">
+                    <option value="model1">Model 1</option>
+                    <option value="model2">Model 2</option>
+                    <option value="model3">Model 3</option>
+                </select>
+                <button class="model-button">Apply Model</button>
+            </div>
+            <button class="focus-button">Focus</button>
+        </div>
+        <div class="vid-container">
+            Camera Stream
+        </div>
+    </div>
+</body>
+
+</html>
