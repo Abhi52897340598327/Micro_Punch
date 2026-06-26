@@ -21,7 +21,11 @@
     background-color: lightgreen;
 }
 
-.refresh {
+.stat-text {
+    font-size: 25px;
+}
+
+.refresh-button {
     width: 15%;
     border-radius: 5px;
 }
@@ -33,6 +37,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    background-color: antiquewhite;
 }
 
 .label {
@@ -44,6 +49,12 @@
     margin: 5px 5px 5px 5px;
     border-radius: 5px;
     height: 50px;
+    background-color: bisque;
+}
+
+.select-button {
+    background-color: lightgray; 
+    border-radius: 5px;
 }
 
 .focus-button {
@@ -60,9 +71,15 @@
     border: 5px solid black;
     background-color: green;
     width: 25%;
-    height: 150;
+    height: 156px;
     border-radius: 5px;
     align-items: center;
+    margin: auto;
+}
+
+.indicator-text {
+    font-size: 30px;
+    margin-top: 56px;
 }
 
 .vid-container {
@@ -73,4 +90,9 @@
     background-color: gray;
     width: 100%px;
     height: 750px;
+    border-radius: 5px
+}
+
+.fix {
+    overflow: auto;
 }
