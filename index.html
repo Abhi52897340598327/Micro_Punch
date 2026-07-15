@@ -5,10 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Camera Stream</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/static/style.css">
 </head>
-
-<!--No AI BTW-->
 
 <body>
     <h1 class="h1">
@@ -18,7 +16,7 @@
         <div class="telemetry fix">
             <div class="indicator fix">
                <div class="indicator-text fix">
-                Detected
+                On Target
                </div>
             </div>
             <div class="statistic fix">
@@ -39,10 +37,147 @@
             </div>
             <button class="focus-button fix">Focus</button>
         </div>
+        
         <div class="vid-container fix">
-            Camera Stream
+            <video id="webcam-feed" autoplay playsinline></video>
+            <canvas id="box-overlay"></canvas>
         </div>
     </div>
+   <script>
+    const videoElement = document.getElementById('webcam-feed');
+    const overlayCanvas = document.getElementById('box-overlay');
+    const overlayCtx = overlayCanvas.getContext('2d');
+    const statNumber = document.querySelector('.statistic .number');
+    
+    // Create a hidden canvas to grab frames from the video
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Connect to the Python WebSocket server
+    const websocketProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(`${websocketProtocol}//${window.location.host}/ws`);
+
+    async function startCamera() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            videoElement.srcObject = stream;
+
+            // Wait for the video to actually start playing before sending frames
+            videoElement.onplaying = () => {
+                canvas.width = videoElement.videoWidth;
+                canvas.height = videoElement.videoHeight;
+                resetOverlay();
+                sendFrames();
+            };
+        } catch (error) {
+            console.error("Camera error: ", error);
+        }
+    }
+
+    function sendFrames() {
+        if (ws.readyState === WebSocket.OPEN) {
+            // Draw the current video frame onto the canvas
+            ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+            
+            // Convert the canvas frame to a base64 JPEG string
+            const frameData = canvas.toDataURL('image/jpeg', 0.7); // 0.7 is quality compression
+            
+            // Send to Python
+            ws.send(frameData);
+        }
+        
+        // Loop this function to keep sending frames
+        // setTimeout limits it to ~10 FPS to avoid crashing the browser/server. 
+        // Adjust as needed based on your hardware.
+        setTimeout(sendFrames, 100); 
+    }
+
+    // Listen for the results from Python
+    ws.onmessage = function(event) {
+        const result = JSON.parse(event.data);
+        
+        // Update the dashboard UI!
+        statNumber.innerText = result.count;
+        drawBoxes(result.boxes);
+    };
+
+    function syncOverlaySize() {
+        const rect = videoElement.getBoundingClientRect();
+        overlayCanvas.width = rect.width;
+        overlayCanvas.height = rect.height;
+    }
+
+    function resetOverlay() {
+        syncOverlaySize();
+        overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+        drawCrosshair();
+    }
+
+    function drawBoxes(boxes) {
+        syncOverlaySize();
+        overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+        const scale = Math.max(
+            overlayCanvas.width / videoElement.videoWidth,
+            overlayCanvas.height / videoElement.videoHeight
+        );
+        const offsetX = (overlayCanvas.width - videoElement.videoWidth * scale) / 2;
+        const offsetY = (overlayCanvas.height - videoElement.videoHeight * scale) / 2;
+
+        boxes.forEach((detection) => {
+            if (!detection.box) return;
+
+            const x = detection.box.x1 * scale + offsetX;
+            const y = detection.box.y1 * scale + offsetY;
+            const width = (detection.box.x2 - detection.box.x1) * scale;
+            const height = (detection.box.y2 - detection.box.y1) * scale;
+            const label = `${detection.name ?? 'object'} ${Math.round((detection.confidence ?? 0) * 100)}%`;
+
+            overlayCtx.strokeStyle = '#00ff66';
+            overlayCtx.lineWidth = 3;
+            overlayCtx.strokeRect(x, y, width, height);
+
+            overlayCtx.font = '16px Arial';
+            const labelWidth = overlayCtx.measureText(label).width + 10;
+            const labelY = Math.max(0, y - 24);
+            overlayCtx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+            overlayCtx.fillRect(x, labelY, labelWidth, 22);
+            overlayCtx.fillStyle = '#ffffff';
+            overlayCtx.fillText(label, x + 5, labelY + 16);
+        });
+
+        drawCrosshair();
+    }
+
+    function drawCrosshair() {
+        const centerX = overlayCanvas.width / 2;
+        const centerY = overlayCanvas.height / 2;
+        const gap = 10;
+        const length = 42;
+
+        overlayCtx.save();
+        overlayCtx.strokeStyle = '#ff2d2d';
+        overlayCtx.lineWidth = 2;
+        overlayCtx.beginPath();
+        overlayCtx.moveTo(centerX - length, centerY);
+        overlayCtx.lineTo(centerX - gap, centerY);
+        overlayCtx.moveTo(centerX + gap, centerY);
+        overlayCtx.lineTo(centerX + length, centerY);
+        overlayCtx.moveTo(centerX, centerY - length);
+        overlayCtx.lineTo(centerX, centerY - gap);
+        overlayCtx.moveTo(centerX, centerY + gap);
+        overlayCtx.lineTo(centerX, centerY + length);
+        overlayCtx.stroke();
+
+        overlayCtx.beginPath();
+        overlayCtx.arc(centerX, centerY, 4, 0, Math.PI * 2);
+        overlayCtx.stroke();
+        overlayCtx.restore();
+    }
+
+    window.addEventListener('DOMContentLoaded', startCamera);
+    window.addEventListener('resize', resetOverlay);
+</script>
 </body>
 
 </html>

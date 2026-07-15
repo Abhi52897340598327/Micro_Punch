@@ -1,0 +1,7 @@
+.venv/
+.ultralytics/
+.matplotlib/
+.cache/
+__pycache__/
+*.py[cod]
+yolov8n.pt
